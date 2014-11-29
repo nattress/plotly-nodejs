@@ -186,8 +186,6 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
     }
   }
 
-  //callback = callback || function() {};
-
   var ext = path.extname(path);
   var format = imageOptions.format;
 
@@ -226,6 +224,8 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
 
   payload = JSON.stringify(payload);
 
+  callback = callback || function() {};
+
   var headers = {
     'plotly-username': self.username,
     'plotly-apikey': self.apiKey,
@@ -253,9 +253,7 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
           callback(err);
         } else {
           var image = JSON.parse(body).payload;
-          writeFile(path, image, function (err) {
-            callback(err);
-          })
+          writeFile(path, image, callback);
         }
       });
     }
@@ -270,11 +268,8 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
 function writeFile (path, image, callback) {
   mkdirp(getDirName(path), function (err) {
     if (err)
-      callback(err);
-
-    fs.writeFile(path + '.png', image, 'base64', function () {
-      callback(null);
-    })
+        callback(err);
+    fs.writeFile(path + '.png', image, 'base64', callback);
   });
 }
 
