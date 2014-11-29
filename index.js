@@ -3,6 +3,7 @@ var http = require('http');
 var jsonStatus = require('./statusmsgs.json');
 var url = require('url');
 var fs = require('fs');
+var path = require('path');
 var mkdirp = require("mkdirp");
 var getDirName = require("path").dirname;
 
@@ -174,9 +175,56 @@ Plotly.prototype.getFigure = function (fileOwner, fileId, callback) {
   req.end();
 }
 
-Plotly.prototype.saveImage = function (figure, path, callback) {
+Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
   var self = this;
-  figure = JSON.stringify(figure);
+
+  if (arguments.length == 3)
+  {
+    if (Object.prototype.toString.call(arguments[2]) == "[object Function]") {
+      callback = imageOptions;
+      imageOptions = {};
+    }
+  }
+
+  //callback = callback || function() {};
+
+  var ext = path.extname(path);
+  var format = imageOptions.format;
+
+  if (!ext && !format)
+  {
+    path += ".png";
+    format = "png";
+  }
+  else if (ext && !format)
+  {
+    format = ext.substring(1);
+  }
+  else if (!ext and format)
+  {
+    path += "." + format;
+  }
+  else if (ext.substring(1) != format)
+  {
+    path += "." + format;
+  }
+
+  var payload = {
+    'figure': figure,
+    'format': format
+  };  
+
+  if (imageOptions.width !== undefined)
+  {
+    payload['width'] = imageOptions.width;
+  }
+
+  if (imageOptions.height !== undefined)
+  {
+    payload['height'] = imageOptions.height;
+  }
+
+  payload = JSON.stringify(payload);
 
   var headers = {
     'plotly-username': self.username,
@@ -206,8 +254,7 @@ Plotly.prototype.saveImage = function (figure, path, callback) {
         } else {
           var image = JSON.parse(body).payload;
           writeFile(path, image, function (err) {
-            if (err) callback(err);
-            console.log('image saved!');
+            callback(err);
           })
         }
       });
@@ -222,10 +269,12 @@ Plotly.prototype.saveImage = function (figure, path, callback) {
 // helper fn to create folders if they don't exist in the path
 function writeFile (path, image, callback) {
   mkdirp(getDirName(path), function (err) {
-    if (err) return callback(err)
-      fs.writeFile(path + '.png', image, 'base64', function () {
-        callback(null);
-      })
+    if (err)
+      callback(err);
+
+    fs.writeFile(path + '.png', image, 'base64', function () {
+      callback(null);
+    })
   });
 }
 

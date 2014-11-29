@@ -175,7 +175,7 @@ plotly.getFigure('fileOwner', 'fileId', function (err, figure) {
 
 ##var plotly.saveImage(figure, path[, callback])
 `figure` accepts a string of the file owners name   
-`path` is a string of the filepath and file name you wish to save the image as.
+`path` is a string of the filepath and file name you wish to save the image as
 `callback(err)` is a function, where `err` is an Error Object.
 ```javascript
 var plotly = require('plotly')('username','apiKey');
