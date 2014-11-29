@@ -175,7 +175,7 @@ Plotly.prototype.getFigure = function (fileOwner, fileId, callback) {
   req.end();
 }
 
-Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
+Plotly.prototype.saveImage = function (figure, fileName, imageOptions, callback) {
   var self = this;
 
   if (arguments.length == 3)
@@ -186,45 +186,49 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
     }
   }
 
-  var ext = path.extname(path);
-  var format = imageOptions.format;
+  callback = callback || function() {};
 
+  var payload = {
+    'figure': figure,
+  };
+
+  if (imageOptions !== undefined)
+  {
+    var format = imageOptions.format;
+
+    if (imageOptions.width !== undefined)
+    {
+      payload['width'] = imageOptions.width;
+    }
+
+    if (imageOptions.height !== undefined)
+    {
+      payload['height'] = imageOptions.height;
+    }
+  }
+
+  var ext = path.extname(fileName);
   if (!ext && !format)
   {
-    path += ".png";
+    fileName += ".png";
     format = "png";
   }
   else if (ext && !format)
   {
     format = ext.substring(1);
   }
-  else if (!ext and format)
+  else if (!ext && format)
   {
-    path += "." + format;
+    fileName += "." + format;
   }
-  else if (ext.substring(1) != format)
+  else if (ext.substring(1).toUpperCase() != format.toUpperCase())
   {
-    path += "." + format;
-  }
-
-  var payload = {
-    'figure': figure,
-    'format': format
-  };  
-
-  if (imageOptions.width !== undefined)
-  {
-    payload['width'] = imageOptions.width;
+    fileName += "." + format;
   }
 
-  if (imageOptions.height !== undefined)
-  {
-    payload['height'] = imageOptions.height;
-  }
+  payload['format'] = format;
 
   payload = JSON.stringify(payload);
-
-  callback = callback || function() {};
 
   var headers = {
     'plotly-username': self.username,
@@ -232,7 +236,7 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
     'plotly-version': self.version,
     'plotly-platform': self.platform,
     'Content-Type': 'application/x-www-form-urlencoded',
-    'Content-Length': figure.length
+    'Content-Length': payload.length
   };
 
   var options = {
@@ -253,13 +257,13 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
           callback(err);
         } else {
           var image = JSON.parse(body).payload;
-          writeFile(path, image, callback);
+          writeFile(fileName, image, callback);
         }
       });
     }
   });
 
-  req.write(figure);
+  req.write(payload);
   req.end();
 }
 
@@ -268,8 +272,9 @@ Plotly.prototype.saveImage = function (figure, path, imageOptions, callback) {
 function writeFile (path, image, callback) {
   mkdirp(getDirName(path), function (err) {
     if (err)
-        callback(err);
-    fs.writeFile(path + '.png', image, 'base64', callback);
+      callback(err);
+    
+    fs.writeFile(path, image, 'base64', callback);
   });
 }
 
